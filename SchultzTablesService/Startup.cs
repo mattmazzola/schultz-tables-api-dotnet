@@ -8,6 +8,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SchultzTablesService.Options;
+using Microsoft.Azure.Documents.Client;
+using Microsoft.Extensions.Options;
 
 namespace SchultzTablesService
 {
@@ -37,6 +39,12 @@ namespace SchultzTablesService
             // Add framework services.
             services.AddMvc();
             services.Configure<DocumentDbOptions>(Configuration.GetSection("DocumentDb"));
+
+            services.AddSingleton<DocumentClient>(serviceProvider =>
+            {
+                var documentDbOptions = serviceProvider.GetRequiredService<IOptions<DocumentDbOptions>>();
+                return new DocumentClient(new Uri(documentDbOptions.Value.AccountUri), documentDbOptions.Value.AccountKey);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

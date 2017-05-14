@@ -9,5 +9,7 @@ namespace SchultzTablesService.Options
     {
         public string AccountUri { get; set; }
         public string AccountKey { get; set; }
+        public string DatabaseName { get; set; }
+        public string UsersCollectionName { get; set; }
     }
 }

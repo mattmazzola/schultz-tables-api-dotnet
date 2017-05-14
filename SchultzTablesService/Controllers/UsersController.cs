@@ -1,11 +1,9 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SchultzTablesService.Options;
+using Microsoft.Azure.Documents.Client;
 
 namespace SchultzTablesService.Controllers
 {
@@ -14,17 +12,21 @@ namespace SchultzTablesService.Controllers
     public class UsersController : Controller
     {
         private readonly DocumentDbOptions documentDbOptions;
+        private readonly DocumentClient documentClient;
 
-        public UsersController(IOptions<DocumentDbOptions> documentDbOptions)
+        public UsersController(IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient)
         {
             this.documentDbOptions = documentDbOptions.Value;
+            this.documentClient = documentClient;
         }
 
         // GET: api/Users
         [HttpGet]
-        public IActionResult Get()
+        public async Task<IActionResult> Get()
         {
-            return Ok(new string[] { "value1", "value2", documentDbOptions.AccountKey, documentDbOptions.AccountUri });
+            var users = documentClient.CreateDocumentQuery<Documents.User>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName)).ToList();
+
+            return Ok(users);
         }
 
         // GET: api/Users/5
@@ -36,20 +38,25 @@ namespace SchultzTablesService.Controllers
         
         // POST: api/Users
         [HttpPost]
-        public void Post([FromBody]string value)
+        public async Task<IActionResult> Post([FromBody]Documents.User user)
         {
+            var newUser = await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName), user);
+
+            return CreatedAtRoute("Get", new { id = user.Id }, newUser);
         }
         
         // PUT: api/Users/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        public IActionResult Put(int id, [FromBody]string value)
         {
+            return Forbid();
         }
         
         // DELETE: api/ApiWithActions/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Delete(int id)
         {
+            return Forbid();
         }
     }
 }
