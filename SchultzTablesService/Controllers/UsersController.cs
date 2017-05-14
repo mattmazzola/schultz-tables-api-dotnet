@@ -51,8 +51,9 @@ namespace SchultzTablesService.Controllers
         public async Task<IActionResult> Post([FromBody]Documents.User user)
         {
             await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName), user);
+            var createdUrl = Url.Action("Get", new { id = user.Id });
 
-            return CreatedAtRoute("Get", new { id = user.Id }, user);
+            return Created(createdUrl, user);
         }
         
         // PUT: api/Users/5
