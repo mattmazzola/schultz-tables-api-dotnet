@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp1.1</TargetFramework>
     <UserSecretsId>8e97aa07-3e6b-4d82-875e-1b19eb1868d2</UserSecretsId>
+    <ApplicationInsightsResourceId>/subscriptions/dbe085e6-4448-4069-ab44-483eafb5c59b/resourcegroups/Default-ApplicationInsights-EastUS/providers/microsoft.insights/components/SchultzTablesService</ApplicationInsightsResourceId>
+    <ApplicationInsightsAnnotationResourceId>/subscriptions/dbe085e6-4448-4069-ab44-483eafb5c59b/resourcegroups/Default-ApplicationInsights-EastUS/providers/microsoft.insights/components/SchultzTablesService</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="1.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services" />
   </ItemGroup>
 
 </Project>
