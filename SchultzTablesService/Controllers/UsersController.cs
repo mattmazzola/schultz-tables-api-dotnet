@@ -31,9 +31,18 @@ namespace SchultzTablesService.Controllers
 
         // GET: api/Users/5
         [HttpGet("{id}", Name = "Get")]
-        public IActionResult Get(int id)
+        public IActionResult Get(string id)
         {
-            return Ok("value");
+            var users = documentClient.CreateDocumentQuery<Documents.User>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName))
+                .Where(user => user.Id == id)
+                .ToList();
+
+            if (users.Count == 0)
+            {
+                return NotFound($"User with id {id} was not found");
+            }
+
+            return Ok(users.First());
         }
         
         // POST: api/Users
