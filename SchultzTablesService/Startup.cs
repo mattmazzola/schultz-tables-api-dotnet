@@ -37,6 +37,7 @@ namespace SchultzTablesService
         public void ConfigureServices(IServiceCollection services)
         {
             // Add framework services.
+            services.AddCors();
             services.AddMvc();
             services.Configure<DocumentDbOptions>(Configuration.GetSection("DocumentDb"));
 
@@ -53,6 +54,7 @@ namespace SchultzTablesService
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
 
+            app.UseCors(builder => builder.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin());
             app.UseMvc();
         }
     }
