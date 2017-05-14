@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SchultzTablesService.Options;
 using Microsoft.Azure.Documents.Client;
+using Microsoft.Azure.Documents;
 
 namespace SchultzTablesService.Controllers
 {
@@ -49,9 +50,9 @@ namespace SchultzTablesService.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]Documents.User user)
         {
-            var newUser = await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName), user);
+            await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName), user);
 
-            return CreatedAtRoute("Get", new { id = user.Id }, newUser);
+            return CreatedAtRoute("Get", new { id = user.Id }, user);
         }
         
         // PUT: api/Users/5
