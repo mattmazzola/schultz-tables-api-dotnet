@@ -23,7 +23,7 @@ namespace SchultzTablesService.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public IActionResult Get()
         {
             var users = documentClient.CreateDocumentQuery<Documents.User>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName)).ToList();
 
