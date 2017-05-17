@@ -14,5 +14,6 @@ namespace SchultzTablesService.Options
         public string ScoresCollectionName { get; set; }
         public string TableLayoutsCollectionName { get; set; }
         public string TableTypesCollectionName { get; set; }
+        public string TimeIdsCollectionName { get; set; }
     }
 }
