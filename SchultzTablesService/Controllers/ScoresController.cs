@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Documents.Client;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using SchultzTablesService.Documents;
@@ -19,11 +20,13 @@ namespace SchultzTablesService.Controllers
     {
         private readonly DocumentDbOptions documentDbOptions;
         private readonly DocumentClient documentClient;
+        private readonly ILogger logger;
 
-        public ScoresController(IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient)
+        public ScoresController(IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient, ILogger<ScoresController> logger)
         {
             this.documentDbOptions = documentDbOptions.Value;
             this.documentClient = documentClient;
+            this.logger = logger;
         }
 
         // GET: api/scores
@@ -80,6 +83,7 @@ namespace SchultzTablesService.Controllers
             // If no matching time id was found log warning with user token to review later for possible cheating.
             if (timeIds.Count == 0)
             {
+                logger.LogWarning(LoggingEvents.TIMEID_NOTFOUND, $"User may be attempting to cheat. Review user account with id: ");
                 return StatusCode((int)HttpStatusCode.Unauthorized, $"You have been logged for attempted cheating.  Your account will be reviewed and may be deleted.");
             }
 
