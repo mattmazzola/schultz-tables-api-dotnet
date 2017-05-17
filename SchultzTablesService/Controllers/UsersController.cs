@@ -1,10 +1,9 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Documents.Client;
 using Microsoft.Extensions.Options;
 using SchultzTablesService.Options;
-using Microsoft.Azure.Documents.Client;
-using Microsoft.Azure.Documents;
 
 namespace SchultzTablesService.Controllers
 {

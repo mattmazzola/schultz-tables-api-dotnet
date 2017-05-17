@@ -1,16 +1,15 @@
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using SchultzTablesService.Options;
-using Microsoft.Azure.Documents.Client;
-using Microsoft.Azure.Documents;
-using SchultzTablesService.Documents;
 using System;
+using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Documents.Client;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using System.Net;
+using SchultzTablesService.Documents;
+using SchultzTablesService.Options;
 
 namespace SchultzTablesService.Controllers
 {
