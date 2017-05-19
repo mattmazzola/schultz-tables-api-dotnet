@@ -19,7 +19,7 @@ namespace SchultzTablesService.Documents
         [JsonProperty("locale")]
         public string Locale { get; set; }
         [JsonProperty("minAgeRange")]
-        public int MinAgeRange { get; set; }
+        public int? MinAgeRange { get; set; }
         [JsonProperty("name")]
         public string Name { get; set; }
         [JsonProperty("picture")]

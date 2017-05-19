@@ -49,6 +49,11 @@ namespace SchultzTablesService.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]Documents.User user)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.UsersCollectionName), user);
             var createdUrl = Url.Action("Get", new { id = user.Id });
 
