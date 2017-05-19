@@ -59,19 +59,5 @@ namespace SchultzTablesService.Controllers
 
             return Created(createdUrl, user);
         }
-        
-        // PUT: api/Users/5
-        [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody]string value)
-        {
-            return Forbid();
-        }
-        
-        // DELETE: api/ApiWithActions/5
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            return Forbid();
-        }
     }
 }
