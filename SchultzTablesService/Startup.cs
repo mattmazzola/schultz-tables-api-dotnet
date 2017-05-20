@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using SchultzTablesService.Options;
 
 namespace SchultzTablesService
@@ -63,7 +64,23 @@ namespace SchultzTablesService
             app.UseRewriter(options);
 
             app.UseCors(builder => builder.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin());
+            app.Use(async (request, next) =>
+            {
+                await next();
+            });
+            app.UseJwtBearerAuthentication(new JwtBearerOptions()
+            {
+                Audience = "a45a80e6-7fc7-4919-8685-ab9923a850a1",
+                MetadataAddress = "https://login.microsoftonline.com/schultztables.onmicrosoft.com/v2.0/.well-known/openid-configuration?p=B2C_1_signinfb",
+                TokenValidationParameters = new TokenValidationParameters()
+                {
+                    ValidateAudience = true,
+                    ValidateIssuer = true,
+                    ValidateIssuerSigningKey = true
+                }
+            });
             app.UseMvc();
+
         }
     }
 }
