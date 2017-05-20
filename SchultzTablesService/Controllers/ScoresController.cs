@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Extensions.Logging;
@@ -20,12 +21,14 @@ namespace SchultzTablesService.Controllers
     [Route("api/[controller]")]
     public class ScoresController : Controller
     {
+        private readonly IDataProtector dataProtector;
         private readonly DocumentDbOptions documentDbOptions;
         private readonly DocumentClient documentClient;
         private readonly ILogger logger;
 
-        public ScoresController(IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient, ILogger<ScoresController> logger)
+        public ScoresController(IDataProtectionProvider dataProtectionProvider, IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient, ILogger<ScoresController> logger)
         {
+            this.dataProtector = dataProtectionProvider.CreateProtector("schultztables");
             this.documentDbOptions = documentDbOptions.Value;
             this.documentClient = documentClient;
             this.logger = logger;
@@ -58,12 +61,13 @@ namespace SchultzTablesService.Controllers
 
         // GET: api/scores/start
         [HttpGet("start")]
-        public async Task<IActionResult> Start()
+        public IActionResult Start()
         {
-            var timeId = new TimeId();
-            var newTimeId = await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.TimeIdsCollectionName), timeId);
+            var timeByteArray = Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString());
+            var signedTime = dataProtector.Protect(timeByteArray);
+            var base64time = Convert.ToBase64String(signedTime);
 
-            return Ok(newTimeId.Resource.Id);
+            return Ok(base64time);
         }
 
         // POST: api/scores
@@ -81,26 +85,13 @@ namespace SchultzTablesService.Controllers
                 return BadRequest(ModelState);
             }
 
-            // Find matching time id
-            var timeIds = documentClient.CreateDocumentQuery<Documents.TimeId>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.TimeIdsCollectionName))
-                .Where(timeId => timeId.Id == scoreInput.TimeId)
-                .ToList();
-
-            // If no matching time id was found log warning with user token to review later for possible cheating.
-            if (timeIds.Count == 0)
-            {
-                logger.LogWarning(LoggingEvents.TIMEID_NOTFOUND, $"User may be attempting to cheat. Review user account with id: ");
-                return StatusCode((int)HttpStatusCode.Unauthorized, $"You have been logged for attempted cheating.  Your account will be reviewed and may be deleted.");
-            }
-
-            var matchingTimeId = timeIds.First();
-
-            // Delete matching id
-            await documentClient.DeleteDocumentAsync(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.TimeIdsCollectionName, matchingTimeId.Id));
+            var signedStartTime = Convert.FromBase64String(scoreInput.SignedStartTime);
+            var unsigngedStartTime = dataProtector.Unprotect(signedStartTime);
+            var startTime = DateTime.Parse(Encoding.UTF8.GetString(unsigngedStartTime));
 
             // Time data is not value log warning with user token for review later.
             var isTimeDataValid = IsTimeDataValid(
-                matchingTimeId.Time,
+                startTime,
                 now,
                 scoreInput,
                 TimeSpan.FromSeconds(10)

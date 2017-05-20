@@ -8,8 +8,8 @@ namespace SchultzTablesService.Documents
     {
         [JsonProperty("id")]
         public string Id { get; set; }
-        [JsonProperty("timeId")]
-        public string TimeId { get; set; }
+        [JsonProperty("signedStartTime")]
+        public string SignedStartTime { get; set; }
         [JsonProperty("userId")]
         public string UserId { get; set; }
         [JsonProperty("startTime")]

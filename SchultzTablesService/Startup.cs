@@ -41,8 +41,10 @@ namespace SchultzTablesService
                 options.Filters.Add(new RequireHttpsAttribute());
             });
 
+
             services.AddCors();
             services.AddMvc();
+            services.AddDataProtection();
             services.Configure<DocumentDbOptions>(Configuration.GetSection("DocumentDb"));
 
             services.AddSingleton<DocumentClient>(serviceProvider =>
