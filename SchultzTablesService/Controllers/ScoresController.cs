@@ -70,6 +70,10 @@ namespace SchultzTablesService.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]Documents.ScoreInput scoreInput)
         {
+            // Save user id from Object Id ("oid") claim onto model
+            var userId = User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier").Value;
+            scoreInput.UserId = userId;
+
             var now = DateTimeOffset.UtcNow;
 
             if (!ModelState.IsValid)
