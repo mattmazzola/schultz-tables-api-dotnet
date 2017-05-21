@@ -46,6 +46,7 @@ namespace SchultzTablesService
             services.AddMvc();
             services.AddDataProtection();
             services.Configure<DocumentDbOptions>(Configuration.GetSection("DocumentDb"));
+            services.Configure<AadB2cApplicationOptions>(Configuration.GetSection("AadB2cApplication"));
 
             services.AddSingleton<DocumentClient>(serviceProvider =>
             {
