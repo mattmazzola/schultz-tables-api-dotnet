@@ -16,8 +16,6 @@ namespace SchultzTablesService.Documents
         public DateTime StartTime { get; set; }
         [JsonProperty("endTime")]
         public DateTime EndTime { get; set; }
-        [JsonProperty("duration")]
-        public TimeSpan Duration { get; set; }
         [JsonProperty("userSequence")]
         public IList<Answer> UserSequence { get; set; }
         [JsonProperty("expectedSequence")]

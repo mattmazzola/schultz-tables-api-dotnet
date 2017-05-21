@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using SchultzTablesService.Documents;
+using SchultzTablesService.DomainModels;
 using SchultzTablesService.Options;
 
 namespace SchultzTablesService.Controllers
@@ -63,21 +64,17 @@ namespace SchultzTablesService.Controllers
         [HttpGet("start")]
         public IActionResult Start()
         {
-            var timeByteArray = Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString());
+            var timeByteArray = Encoding.UTF8.GetBytes(DateTimeOffset.UtcNow.ToString());
             var signedTime = dataProtector.Protect(timeByteArray);
             var base64time = Convert.ToBase64String(signedTime);
 
-            return Ok(base64time);
+            return Ok(new { Value = base64time });
         }
 
         // POST: api/scores
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]Documents.ScoreInput scoreInput)
         {
-            // Save user id from Object Id ("oid") claim onto model
-            var userId = User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier").Value;
-            scoreInput.UserId = userId;
-
             var now = DateTimeOffset.UtcNow;
 
             if (!ModelState.IsValid)
@@ -85,9 +82,14 @@ namespace SchultzTablesService.Controllers
                 return BadRequest(ModelState);
             }
 
+            // Save user id from Object Id ("oid") claim onto model
+            var userId = User.FindFirst("http://schemas.microsoft.com/identity/claims/objectidentifier").Value;
+            scoreInput.UserId = userId;
+
+
             var signedStartTime = Convert.FromBase64String(scoreInput.SignedStartTime);
             var unsigngedStartTime = dataProtector.Unprotect(signedStartTime);
-            var startTime = DateTime.Parse(Encoding.UTF8.GetString(unsigngedStartTime));
+            var startTime = DateTimeOffset.Parse(Encoding.UTF8.GetString(unsigngedStartTime));
 
             // Time data is not value log warning with user token for review later.
             var isTimeDataValid = IsTimeDataValid(
@@ -137,7 +139,7 @@ namespace SchultzTablesService.Controllers
                 TableTypeId = tableType.Id,
                 StartTime = scoreInput.StartTime,
                 EndTime = scoreInput.EndTime,
-                Duration = scoreInput.Duration,
+                Duration = scoreInput.EndTime - scoreInput.StartTime,
                 UserId = scoreInput.UserId
             };
 
@@ -159,12 +161,12 @@ namespace SchultzTablesService.Controllers
             if (scoreInput.EndTime < scoreInput.StartTime)
                 return false;
 
-            var startTimeSpan = serverStartTime - scoreInput.StartTime;
-            if (startTimeSpan.Duration() > maxTimeSpan)
+            var startTimeSkew = serverStartTime - scoreInput.StartTime;
+            if (startTimeSkew.Duration() > maxTimeSpan)
                 return false;
 
-            var endTimeSpan = serverEndTime - scoreInput.EndTime;
-            if (endTimeSpan.Duration() > maxTimeSpan)
+            var endTimeSkew = serverEndTime - scoreInput.EndTime;
+            if (endTimeSkew.Duration() > maxTimeSpan)
                 return false;
 
             var durationDifference = (serverEndTime - serverStartTime) - (scoreInput.EndTime - scoreInput.StartTime);
