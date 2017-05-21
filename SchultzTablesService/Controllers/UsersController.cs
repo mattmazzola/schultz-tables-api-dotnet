@@ -46,9 +46,10 @@ namespace SchultzTablesService.Controllers
 
             var httpClient = new HttpClient();
             var response = await httpClient.SendAsync(httpRequestMessage);
-            var users = JsonConvert.DeserializeObject<OdataResponse<IList<object>>>(await response.Content.ReadAsStringAsync());
+            var graphApiUsers = JsonConvert.DeserializeObject<OdataResponse<IList<GraphApiUser>>>(await response.Content.ReadAsStringAsync());
+            var users = graphApiUsers.Value.Select(x => x.ToUser());
 
-            return Ok(users.Value);
+            return Ok(users);
         }
 
         // GET: api/Users/5
@@ -62,9 +63,9 @@ namespace SchultzTablesService.Controllers
 
             var httpClient = new HttpClient();
             var response = await httpClient.SendAsync(httpRequestMessage);
-            var user = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync());
+            var graphApiUser = JsonConvert.DeserializeObject<GraphApiUser>(await response.Content.ReadAsStringAsync());
 
-            return Ok(user);
+            return Ok(graphApiUser.ToUser());
         }
     }
 }
