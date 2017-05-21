@@ -140,6 +140,7 @@ namespace SchultzTablesService.Controllers
                 StartTime = scoreInput.StartTime,
                 EndTime = scoreInput.EndTime,
                 Duration = scoreInput.EndTime - scoreInput.StartTime,
+                DurationMilliseconds = (scoreInput.EndTime - scoreInput.StartTime).TotalMilliseconds,
                 UserId = scoreInput.UserId
             };
 

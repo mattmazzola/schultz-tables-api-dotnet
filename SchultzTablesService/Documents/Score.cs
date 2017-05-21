@@ -16,6 +16,8 @@ namespace SchultzTablesService.Documents
         public DateTime EndTime { get; set; }
         [JsonProperty("duration")]
         public TimeSpan Duration { get; set; }
+        [JsonProperty("durationMilliseconds")]
+        public double DurationMilliseconds { get; set; }
         [JsonProperty("sequence")]
         public IList<Answer> Sequence { get; set; }
         [JsonProperty("tableLayoutId")]
