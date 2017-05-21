@@ -39,7 +39,8 @@ namespace SchultzTablesService.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            var scores = documentClient.CreateDocumentQuery<Documents.Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName)).ToList();
+            var scores = documentClient.CreateDocumentQuery<Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
+                .ToList();
 
             return Ok(scores);
         }
@@ -48,7 +49,7 @@ namespace SchultzTablesService.Controllers
         [HttpGet("{id}", Name = "GetScore")]
         public IActionResult Get(string id)
         {
-            var scores = documentClient.CreateDocumentQuery<Documents.Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
+            var scores = documentClient.CreateDocumentQuery<Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
                 .Where(score => score.Id == id)
                 .ToList();
 
@@ -73,7 +74,7 @@ namespace SchultzTablesService.Controllers
 
         // POST: api/scores
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody]Documents.ScoreInput scoreInput)
+        public async Task<IActionResult> Post([FromBody]ScoreInput scoreInput)
         {
             var now = DateTimeOffset.UtcNow;
 
