@@ -40,6 +40,7 @@ namespace SchultzTablesService.Controllers
         public IActionResult Get()
         {
             var scores = documentClient.CreateDocumentQuery<Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
+                .OrderBy(score => score.DurationMilliseconds)
                 .ToList();
 
             return Ok(scores);
