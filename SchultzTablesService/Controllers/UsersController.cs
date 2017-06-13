@@ -22,14 +22,10 @@ namespace SchultzTablesService.Controllers
         private readonly AadB2cApplicationOptions aadB2cApplicationOptions;
         private readonly AuthenticationContext authenticationContext;
         private readonly ClientCredential clientCredential;
-        private readonly DocumentDbOptions documentDbOptions;
-        private readonly DocumentClient documentClient;
 
-        public UsersController(IOptions<AadB2cApplicationOptions> aadB2cApplicationOptions, IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient)
+        public UsersController(IOptions<AadB2cApplicationOptions> aadB2cApplicationOptions)
         {
             this.aadB2cApplicationOptions = aadB2cApplicationOptions.Value;
-            this.documentDbOptions = documentDbOptions.Value;
-            this.documentClient = documentClient;
 
             this.authenticationContext = new AuthenticationContext($"https://login.microsoftonline.com/{aadB2cApplicationOptions.Value.Tenant}");
             this.clientCredential = new ClientCredential(aadB2cApplicationOptions.Value.ApplicationId, aadB2cApplicationOptions.Value.ApplicationKey);
