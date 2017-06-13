@@ -1,18 +1,24 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json;
 using SchultzTablesService.Documents;
 using SchultzTablesService.DomainModels;
+using SchultzTablesService.Models;
 using SchultzTablesService.Options;
 
 namespace SchultzTablesService.Controllers
@@ -22,13 +28,19 @@ namespace SchultzTablesService.Controllers
     [Route("api/[controller]")]
     public class ScoresController : Controller
     {
+        private readonly AadB2cApplicationOptions aadB2cApplicationOptions;
+        private readonly AuthenticationContext authenticationContext;
+        private readonly ClientCredential clientCredential;
         private readonly IDataProtector dataProtector;
         private readonly DocumentDbOptions documentDbOptions;
         private readonly DocumentClient documentClient;
         private readonly ILogger logger;
 
-        public ScoresController(IDataProtectionProvider dataProtectionProvider, IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient, ILogger<ScoresController> logger)
+        public ScoresController(IDataProtectionProvider dataProtectionProvider, IOptions<DocumentDbOptions> documentDbOptions, DocumentClient documentClient, ILogger<ScoresController> logger, IOptions<AadB2cApplicationOptions> aadB2cApplicationOptions)
         {
+            this.aadB2cApplicationOptions = aadB2cApplicationOptions.Value;
+            this.authenticationContext = new AuthenticationContext($"https://login.microsoftonline.com/{aadB2cApplicationOptions.Value.Tenant}");
+            this.clientCredential = new ClientCredential(aadB2cApplicationOptions.Value.ApplicationId, aadB2cApplicationOptions.Value.ApplicationKey);
             this.dataProtector = dataProtectionProvider.CreateProtector("schultztables");
             this.documentDbOptions = documentDbOptions.Value;
             this.documentClient = documentClient;
@@ -37,29 +49,124 @@ namespace SchultzTablesService.Controllers
 
         // GET: api/scores
         [HttpGet]
-        public IActionResult Get()
+        public async Task<IActionResult> Search([FromQuery]string userId)
         {
-            var scores = documentClient.CreateDocumentQuery<Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
-                .OrderBy(score => score.DurationMilliseconds)
+            var scoresQuery = documentClient.CreateDocumentQuery<Documents.Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
+                .OrderBy(score => score.DurationMilliseconds);
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                scoresQuery.Where(score => score.UserId == userId);
+            }
+
+            var scores = scoresQuery
+                .Select(s => new DomainModels.Score
+                {
+                    Id = s.Id,
+                    UserId = s.UserId,
+                    DurationMilliseconds = s.DurationMilliseconds,
+                    ScoreDetailsId = s.Id
+                })
                 .ToList();
+
+            var authenticationResult = await authenticationContext.AcquireTokenAsync("https://graph.windows.net", clientCredential);
+
+            var httpRequestMessage = new HttpRequestMessage(HttpMethod.Get, $"https://graph.windows.net/{aadB2cApplicationOptions.Tenant}/getObjectsByObjectIds?api-version=1.6");
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue(authenticationResult.AccessTokenType, authenticationResult.AccessToken);
+
+            var objectIdsBody = new ObjectIdsBody
+            {
+                ObjectIds = scores.Select(s => s.UserId).ToList(),
+                Types = new List<string> { "user" }
+            };
+            var stringContent = new StringContent(JsonConvert.SerializeObject(objectIdsBody), Encoding.UTF8, "application/json");
+            httpRequestMessage.Content = stringContent;
+
+            var httpClient = new HttpClient();
+            var response = await httpClient.SendAsync(httpRequestMessage);
+            var graphApiUsers = JsonConvert.DeserializeObject<OdataResponse<IList<GraphApiUser>>>(await response.Content.ReadAsStringAsync());
+            var users = graphApiUsers.Value.Select(x => x.ToUser()).ToList();
+
+            var scoresWithUsers = new ScoresWithUsers
+            {
+                Scores = scores,
+                Users = users
+            };
 
             return Ok(scores);
         }
 
         // GET: api/scores/5
         [HttpGet("{id}", Name = "GetScore")]
-        public IActionResult Get(string id)
+        public async Task<IActionResult> Get(string id)
         {
-            var scores = documentClient.CreateDocumentQuery<Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
-                .Where(score => score.Id == id)
-                .ToList();
+            Documents.Score score;
 
-            if (scores.Count == 0)
+            try
             {
-                return NotFound($"User with id {id} was not found");
+                score = await documentClient.ReadDocumentAsync<Documents.Score>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName, id));
+            }
+            catch (DocumentClientException e)
+            {
+                return NotFound($"Score with id {id} was not found");
             }
 
-            return Ok(scores.First());
+            var domainScore = new DomainModels.Score
+            {
+                Id = score.Id,
+                UserId = score.UserId,
+                DurationMilliseconds = score.DurationMilliseconds,
+                ScoreDetailsId = score.Id
+            };
+
+
+            return Ok(domainScore);
+        }
+
+        // GET: api/scores/5
+        [HttpGet("{id}/details", Name = "GetScoreDetails")]
+        public async Task<IActionResult> GetDetails(string id)
+        {
+            Documents.Score score;
+            Documents.TableLayout tableLayout;
+            Documents.TableType tableType;
+
+            try
+            {
+                score = await documentClient.ReadDocumentAsync<Documents.Score>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName, id));
+            }
+            catch (DocumentClientException e)
+            {
+                return NotFound($"Score with id {id} was not found");
+            }
+
+            try
+            {
+                tableLayout = await documentClient.ReadDocumentAsync<Documents.TableLayout>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.TableLayoutsCollectionName, score.TableLayoutId));
+            }
+            catch (DocumentClientException e)
+            {
+                return NotFound($"Table Layout with id {score.TableLayoutId} was not found");
+            }
+
+            try
+            {
+                tableType = await documentClient.ReadDocumentAsync<Documents.TableType>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.TableTypesCollectionName, score.TableTypeId));
+            }
+            catch (DocumentClientException e)
+            {
+                return NotFound($"Table Type with id {score.TableTypeId} was not found");
+            }
+
+            var scoreDetails = new ScoreDetails
+            {
+                Id = score.Id,
+                Sequence = score.Sequence,
+                TableLayout = tableLayout,
+                TableType = tableType
+            };
+
+            return Ok(scoreDetails);
         }
 
         // GET: api/scores/start
@@ -134,7 +241,7 @@ namespace SchultzTablesService.Controllers
                 tableType.Id = Convert.ToBase64String(tableTypeHash).Replace('/', '_');
             }
 
-            var score = new Score()
+            var score = new Documents.Score()
             {
                 Sequence = scoreInput.UserSequence,
                 TableLayoutId = tableLayout.Id,

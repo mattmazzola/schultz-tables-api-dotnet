@@ -33,7 +33,7 @@ namespace SchultzTablesService.Documents
         [JsonProperty("cell")]
         public Cell Cell { get; set; }
         [JsonProperty("correct")]
-        public bool correct { get; set; }
+        public bool Correct { get; set; }
     }
 
     public class Cell
