@@ -93,7 +93,7 @@ namespace SchultzTablesService.Controllers
                 Users = users
             };
 
-            return Ok(scores);
+            return Ok(scoresWithUsers);
         }
 
         // GET: api/scores/5
