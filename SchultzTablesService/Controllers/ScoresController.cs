@@ -161,6 +161,8 @@ namespace SchultzTablesService.Controllers
             var scoreDetails = new ScoreDetails
             {
                 Id = score.Id,
+                StartTime = score.StartTime,
+                EndTime = score.EndTime,
                 Sequence = score.Sequence,
                 TableLayout = tableLayout,
                 TableType = tableType
