@@ -85,7 +85,7 @@ namespace SchultzTablesService.Controllers
             var httpClient = new HttpClient();
             var response = await httpClient.SendAsync(httpRequestMessage);
             var graphApiUsers = JsonConvert.DeserializeObject<OdataResponse<IList<GraphApiUser>>>(await response.Content.ReadAsStringAsync());
-            var users = graphApiUsers.Value.Select(x => x.ToUser()).ToList();
+            var users = (graphApiUsers.Value != null) ? graphApiUsers.Value.Select(x => x.ToUser()).ToList() : new List<DomainModels.User>();
 
             var scoresWithUsers = new ScoresWithUsers
             {
