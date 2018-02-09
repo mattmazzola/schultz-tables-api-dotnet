@@ -5,10 +5,8 @@ using SchultzTablesService.Documents;
 
 namespace SchultzTablesService.DomainModels
 {
-    public class ScoreDetails
+    public class ScoreDetails : Score
     {
-        [JsonProperty("id")]
-        public string Id { get; set; }
         [JsonProperty("startTime")]
         public DateTime StartTime { get; set; }
         [JsonProperty("endTime")]

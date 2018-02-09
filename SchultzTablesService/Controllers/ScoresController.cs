@@ -64,8 +64,7 @@ namespace SchultzTablesService.Controllers
                 {
                     Id = s.Id,
                     UserId = s.UserId,
-                    DurationMilliseconds = s.DurationMilliseconds,
-                    ScoreDetailsId = s.Id
+                    DurationMilliseconds = s.DurationMilliseconds
                 })
                 .ToList();
 
@@ -101,33 +100,6 @@ namespace SchultzTablesService.Controllers
         public async Task<IActionResult> Get(string id)
         {
             Documents.Score score;
-
-            try
-            {
-                score = await documentClient.ReadDocumentAsync<Documents.Score>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName, id));
-            }
-            catch (DocumentClientException e)
-            {
-                return NotFound($"Score with id {id} was not found");
-            }
-
-            var domainScore = new DomainModels.Score
-            {
-                Id = score.Id,
-                UserId = score.UserId,
-                DurationMilliseconds = score.DurationMilliseconds,
-                ScoreDetailsId = score.Id
-            };
-
-
-            return Ok(domainScore);
-        }
-
-        // GET: api/scores/5
-        [HttpGet("{id}/details", Name = "GetScoreDetails")]
-        public async Task<IActionResult> GetDetails(string id)
-        {
-            Documents.Score score;
             Documents.TableLayout tableLayout;
             Documents.TableType tableType;
 
@@ -135,7 +107,7 @@ namespace SchultzTablesService.Controllers
             {
                 score = await documentClient.ReadDocumentAsync<Documents.Score>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName, id));
             }
-            catch (DocumentClientException e)
+            catch (DocumentClientException)
             {
                 return NotFound($"Score with id {id} was not found");
             }
@@ -144,7 +116,7 @@ namespace SchultzTablesService.Controllers
             {
                 tableLayout = await documentClient.ReadDocumentAsync<Documents.TableLayout>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.TableLayoutsCollectionName, score.TableLayoutId));
             }
-            catch (DocumentClientException e)
+            catch (DocumentClientException)
             {
                 return NotFound($"Table Layout with id {score.TableLayoutId} was not found");
             }
@@ -153,7 +125,7 @@ namespace SchultzTablesService.Controllers
             {
                 tableType = await documentClient.ReadDocumentAsync<Documents.TableType>(UriFactory.CreateDocumentUri(documentDbOptions.DatabaseName, documentDbOptions.TableTypesCollectionName, score.TableTypeId));
             }
-            catch (DocumentClientException e)
+            catch (DocumentClientException)
             {
                 return NotFound($"Table Type with id {score.TableTypeId} was not found");
             }
