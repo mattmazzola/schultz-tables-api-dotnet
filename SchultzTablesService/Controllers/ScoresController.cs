@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.Documents;
 using Microsoft.Azure.Documents.Client;
+using Microsoft.Azure.Documents.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
@@ -49,17 +50,34 @@ namespace SchultzTablesService.Controllers
 
         // GET: api/scores
         [HttpGet]
-        public async Task<IActionResult> Search([FromQuery]string userId)
+        public async Task<IActionResult> Search([FromQuery]string userId, [FromQuery]string tableTypeId, [FromQuery]string continuationToken)
         {
-            var scoresQuery = documentClient.CreateDocumentQuery<Documents.Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName))
-                .OrderBy(score => score.DurationMilliseconds);
+            var queryOptions = new FeedOptions { MaxItemCount = 20 };
+            if (!string.IsNullOrWhiteSpace(continuationToken))
+            {
+                queryOptions.RequestContinuation = continuationToken;
+            }
+
+            var scoresQuery = documentClient.CreateDocumentQuery<Documents.Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName), queryOptions)
+                    .OrderBy(score => score.DurationMilliseconds);
+
+            var scoresDocumentQuery = scoresQuery.AsDocumentQuery();
+
+            if (!string.IsNullOrWhiteSpace(tableTypeId))
+            {
+                scoresDocumentQuery = scoresQuery.Where(score => score.TableTypeId == tableTypeId).AsDocumentQuery();
+            }
 
             if (!string.IsNullOrEmpty(userId))
             {
-                scoresQuery.Where(score => score.UserId == userId);
+                scoresDocumentQuery = scoresQuery.Where(score => score.UserId == userId).AsDocumentQuery();
             }
 
-            var scores = scoresQuery
+            var scoresPage = await scoresDocumentQuery.ExecuteNextAsync<DomainModels.Score>();
+            var scoresResults = scoresPage
+                .ToList();
+
+            var scores = scoresResults
                 .Select(s => new DomainModels.Score
                 {
                     Id = s.Id,
@@ -88,6 +106,7 @@ namespace SchultzTablesService.Controllers
 
             var scoresWithUsers = new ScoresWithUsers
             {
+                ContinuationToken = scoresDocumentQuery.HasMoreResults ? scoresPage.ResponseContinuation : null,
                 Scores = scores,
                 Users = users
             };
