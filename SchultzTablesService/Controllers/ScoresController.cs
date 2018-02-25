@@ -50,7 +50,7 @@ namespace SchultzTablesService.Controllers
 
         // GET: api/scores
         [HttpGet]
-        public async Task<IActionResult> Search([FromQuery]string userId, [FromQuery]string tableTypeId, [FromQuery]string continuationToken)
+        public async Task<IActionResult> Search([FromQuery]string userId, [FromQuery]string tableTypeId, [FromQuery]bool orderByDuration, [FromQuery]string continuationToken)
         {
             var queryOptions = new FeedOptions { MaxItemCount = 20 };
             if (!string.IsNullOrWhiteSpace(continuationToken))
@@ -58,21 +58,39 @@ namespace SchultzTablesService.Controllers
                 queryOptions.RequestContinuation = continuationToken;
             }
 
-            var scoresQuery = documentClient.CreateDocumentQuery<Documents.Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName), queryOptions)
-                    .OrderBy(score => score.DurationMilliseconds);
-
-            var scoresDocumentQuery = scoresQuery.AsDocumentQuery();
+            var scoresSqlQuery = new SqlQuerySpec("SELECT * FROM score");
 
             if (!string.IsNullOrWhiteSpace(tableTypeId))
             {
-                scoresDocumentQuery = scoresQuery.Where(score => score.TableTypeId == tableTypeId).AsDocumentQuery();
-            }
+                scoresSqlQuery.Parameters.Add(new SqlParameter("@tableTypeId", tableTypeId));
+                scoresSqlQuery = new SqlQuerySpec(scoresSqlQuery.QueryText += " WHERE score.tableTypeId = @tableTypeId", scoresSqlQuery.Parameters);
+                //scoresDocumentQuery = scoresQuery.Where(score => score.TableTypeId == tableTypeId).AsDocumentQuery();
 
-            if (!string.IsNullOrEmpty(userId))
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    scoresSqlQuery.Parameters.Add(new SqlParameter("@userId", userId));
+                    scoresSqlQuery = new SqlQuerySpec(scoresSqlQuery.QueryText += " AND score.userId = @userId", scoresSqlQuery.Parameters);
+                    //scoresDocumentQuery = scoresQuery.Where(score => score.UserId == userId).AsDocumentQuery();
+                }
+            }
+            else if (!string.IsNullOrEmpty(userId))
             {
-                scoresDocumentQuery = scoresQuery.Where(score => score.UserId == userId).AsDocumentQuery();
+                scoresSqlQuery.Parameters.Add(new SqlParameter("@userId", userId));
+                scoresSqlQuery = new SqlQuerySpec(scoresSqlQuery.QueryText += " WHERE score.userId = @userId", scoresSqlQuery.Parameters);
+                //scoresDocumentQuery = scoresQuery.Where(score => score.UserId == userId).AsDocumentQuery();
             }
 
+            if (orderByDuration == true)
+            {
+                scoresSqlQuery = new SqlQuerySpec(scoresSqlQuery.QueryText += " ORDER BY score.durationMilliseconds ASC", scoresSqlQuery.Parameters);
+            }
+            else
+            {
+                scoresSqlQuery = new SqlQuerySpec(scoresSqlQuery.QueryText += " ORDER BY score._ts DESC", scoresSqlQuery.Parameters);
+            }
+
+            var scoresQuery = documentClient.CreateDocumentQuery<Documents.Score>(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName), scoresSqlQuery, queryOptions);
+            var scoresDocumentQuery = scoresQuery.AsDocumentQuery();
             var scoresPage = await scoresDocumentQuery.ExecuteNextAsync<DomainModels.Score>();
             var scores = scoresPage.ToList();
 
