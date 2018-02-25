@@ -74,17 +74,7 @@ namespace SchultzTablesService.Controllers
             }
 
             var scoresPage = await scoresDocumentQuery.ExecuteNextAsync<DomainModels.Score>();
-            var scoresResults = scoresPage
-                .ToList();
-
-            var scores = scoresResults
-                .Select(s => new DomainModels.Score
-                {
-                    Id = s.Id,
-                    UserId = s.UserId,
-                    DurationMilliseconds = s.DurationMilliseconds
-                })
-                .ToList();
+            var scores = scoresPage.ToList();
 
             var authenticationResult = await authenticationContext.AcquireTokenAsync("https://graph.windows.net", clientCredential);
 
@@ -234,7 +224,7 @@ namespace SchultzTablesService.Controllers
                 tableType.Id = Convert.ToBase64String(tableTypeHash).Replace('/', '_');
             }
 
-            var score = new Documents.Score()
+            var scoreDocument = new Documents.Score()
             {
                 Sequence = scoreInput.UserSequence,
                 TableLayoutId = tableLayout.Id,
@@ -248,10 +238,19 @@ namespace SchultzTablesService.Controllers
 
             var newTableLayout = await documentClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.TableLayoutsCollectionName), tableLayout);
             var newTableType = await documentClient.UpsertDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.TableTypesCollectionName), tableType);
-            var newScore = await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName), score);
-            var createdUrl = Url.RouteUrl("GetScore", new { id = newScore.Resource.Id });
+            var newScoreDocument = await documentClient.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(documentDbOptions.DatabaseName, documentDbOptions.ScoresCollectionName), scoreDocument);
+            var createdUrl = Url.RouteUrl("GetScore", new { id = newScoreDocument.Resource.Id });
 
-            return Created(createdUrl, newScore.Resource);
+            var newScore = new DomainModels.Score()
+            {
+                Id = newScoreDocument.Resource.Id,
+                DurationMilliseconds = scoreDocument.DurationMilliseconds,
+                EndTime = scoreDocument.EndTime,
+                StartTime = scoreDocument.StartTime,
+                UserId = scoreDocument.UserId
+            };
+
+            return Created(createdUrl, newScore);
         }
 
         private bool IsTimeDataValid(

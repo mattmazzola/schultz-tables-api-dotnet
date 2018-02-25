@@ -14,5 +14,9 @@ namespace SchultzTablesService.DomainModels
         public string UserId { get; set; }
         [JsonProperty("durationMilliseconds")]
         public double DurationMilliseconds { get; set; }
+        [JsonProperty("startTime")]
+        public DateTime StartTime { get; set; }
+        [JsonProperty("endTime")]
+        public DateTime EndTime { get; set; }
     }
 }

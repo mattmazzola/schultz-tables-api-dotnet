@@ -7,10 +7,6 @@ namespace SchultzTablesService.DomainModels
 {
     public class ScoreDetails : Score
     {
-        [JsonProperty("startTime")]
-        public DateTime StartTime { get; set; }
-        [JsonProperty("endTime")]
-        public DateTime EndTime { get; set; }
         [JsonProperty("sequence")]
         public IList<Answer> Sequence { get; set; }
         [JsonProperty("tableLayout")]
